@@ -35,20 +35,55 @@ html{
     background-color: black;
     font-family: Roboto;
 }
-.default-body{
+.main-div{
+    width:640px;
     text-align:center;
-    width:100%;
-    color:white;
+}
+.default-body{
+    display: flex;
+    text-align: center;
+    width: 100%;
+    color: #EFEFEFFF;
+    flex-direction: column;
+    align-items: center;
 }
 .kloaka-logo{
     display:flex;
     flex-direction: column;
     margin-top:16px;
 }
+.section{
+    margin-top: 16px;
+    padding: 8px;
+    border-top:solid 1px #777777;
+    text-align:center;
+}
 .kloaka-logo img{
     object-fit: contain;
-    height: 40vh;
+    height: 150px;
 }
 .kloaka-logo span{
     margin-top:16px;
+}
+h2{
+    color: #e99708;
+}
+/* unvisited link */
+a:link {
+    color: #e99708;
+}
+
+/* visited link */
+a:visited {
+    color: #e99708;
+}
+
+/* mouse over link */
+a:hover {
+    color: #7e5104;
+}
+
+/* selected link */
+a:active {
+    color: #e99708;
 }
