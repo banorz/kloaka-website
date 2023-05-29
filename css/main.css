@@ -36,8 +36,10 @@ html{
     font-family: Roboto;
 }
 .main-div{
-    width:640px;
     text-align:center;
+    max-width: 640px;
+    min-width: 200px;
+    width: 80%;
 }
 .default-body{
     display: flex;
