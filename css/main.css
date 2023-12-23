@@ -54,6 +54,9 @@ html{
     flex-direction: column;
     margin-top:16px;
 }
+.social-button-follow{
+    width:50px;height:50px;margin-right:2px;margin-left:2px;
+}
 .section{
     margin-top: 16px;
     padding: 8px;
