@@ -22,12 +22,12 @@ title: Kloaka Studio
 description: >- # this means to ignore newlines until "baseurl:"
   Studio di registrazione semi-itinerante e underground
 baseurl:  # the subpath of your site, e.g. /blog
-url: https://www.kloaka.it # the base hostname & protocol for your site, e.g. http://example.com
+url: https://www.kloakarecords.it # the base hostname & protocol for your site, e.g. http://example.com
 email: kloaka.info@gmail.com
-phone: "+393515409359"
-facebook: https://www.facebook.com/kloakastudio
-tiktok: https://www.tiktok.com/@kloakastudio
-instagram: https://www.instagram.com/kloakastudio/
+phone: "393515409359"
+facebook: https://www.facebook.com/kl0aka.records
+tiktok: https://www.tiktok.com/@kloaka.records
+instagram: https://www.instagram.com/kloaka.records/
 youtube:
 soundcloud: 
 bandcamp: 
