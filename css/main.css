@@ -67,6 +67,21 @@ html{
     object-fit: contain;
     height: 150px;
 }
+.header-contact{
+    margin-top:24px;
+    font-size:26px;
+    margin-bottom:16px;
+
+}
+.session-section h4{
+    margin-top:32px;
+    margin-bottom:12px;
+}
+.header-contact a{
+    text-decoration: none;
+}
+
+
 .kloaka-logo span{
     margin-top:16px;
 }
