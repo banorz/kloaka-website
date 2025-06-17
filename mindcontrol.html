@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Mind Control</title>
+    <style>
+        /* Un font più neutro e digitale */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+            background-color: #000000;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #counter {
+            /* Posizionamento al centro */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2; /* Sta sopra il canvas */
+            
+            /* Stile del numero */
+            color: rgba(255, 255, 255, 0.8);
+            font-family: 'Roboto Mono', monospace;
+            font-size: 18vw; /* Dimensione grande e reattiva */
+            font-weight: 300;
+
+            /* Effetto "glow" psichedelico */
+            text-shadow: 
+                0 0 5px rgba(255, 255, 255, 0.5),
+                0 0 15px rgba(0, 255, 255, 0.4),
+                0 0 30px rgba(255, 0, 255, 0.4);
+            
+            /* Animazione per un leggero sfarfallio, come un display instabile */
+            animation: flicker 5s infinite linear;
+        }
+
+        @keyframes flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                text-shadow:
+                    0 0 5px rgba(255, 255, 255, 0.5),
+                    0 0 15px rgba(0, 255, 255, 0.4),
+                    0 0 30px rgba(255, 0, 255, 0.4),
+                    0 0 50px rgba(0, 255, 0, 0.3);
+            }
+            20%, 24%, 55% {
+                text-shadow: none;
+            }
+        }
+
+    </style>
+	<script
+  src="https://code.jquery.com/jquery-3.7.1.min.js"
+  integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+  crossorigin="anonymous"></script>
+</head>
+<body>
+    
+    <canvas id="spaceCanvas"></canvas>
+    <div id="counter">...</div>
+
+    <script>
+        // --- LOGICA DELL'INTERFACCIA E DELL'ANIMAZIONE ---
+
+        const canvas = document.getElementById('spaceCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particles = [];
+        let hue = 0;
+        const PARTICLE_COUNT = 800;
+
+        // Funzione per generare un numero casuale
+        function random(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        // Classe per le particelle vettoriali
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            // Funzione per resettare una particella quando esce dallo schermo
+            reset() {
+                this.x = canvas.width / 2;
+                this.y = canvas.height / 2;
+                this.angle = random(0, Math.PI * 2); // Angolo di partenza casuale
+                this.speed = random(1, 4);
+                this.size = this.speed / 2;
+                this.distance = 0;
+                this.maxDistance = Math.max(canvas.width, canvas.height) / 2;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                // Il colore cambia in base alla tonalità globale (hue)
+                ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
+                ctx.fill();
+            }
+
+            update() {
+                // Si muove dal centro verso l'esterno
+                this.x += Math.cos(this.angle) * this.speed;
+                this.y += Math.sin(this.angle) * this.speed;
+                this.distance = Math.hypot(this.x - canvas.width / 2, this.y - canvas.height / 2);
+
+                // Se la particella è troppo lontana, la resetta
+                if (this.distance >= this.maxDistance) {
+                    this.reset();
+                }
+            }
+        }
+
+        function init() {
+            particles = [];
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                particles.push(new Particle());
+            }
+			$.ajax({
+				method: 'GET',
+				url: 'https://api.api-ninjas.com/v1/counter?id=octonaut&hit=true',
+				headers: { 'X-Api-Key': '3avEtLI5pCj5Ct15/XHOOA==gGOMgdojtUlbJS6t'},
+				contentType: 'application/json',
+				success: function(result) {
+					updateVisitorCount(result.value)
+				},
+				error: function ajaxError(jqXHR) {
+					console.error('Error: ', jqXHR.responseText);
+				}
+			});
+        }
+
+        function animate() {
+            // Sfondo nero con effetto scia per un look più fluido e psichedelico
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Fa ruotare i colori lentamente
+            hue = (hue + 0.3) % 360;
+
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Ridimensiona il canvas se la finestra cambia dimensione
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            init();
+        });
+
+
+        // --- LOGICA DEL CONTATORE (DA RIEMPIRE)
+
+
+        const counterElement = document.getElementById('counter');
+
+        /**
+         * Funzione per aggiornare il numero visualizzato al centro.
+         * Chiamala dopo aver ricevuto il conteggio dal tuo backend.
+         * @param {number | string} count Il numero di visitatori da visualizzare.
+         */
+        function updateVisitorCount(count) {
+            counterElement.textContent = count;
+        }
+
+        // Esempio di utilizzo:
+        // Quando avrai la tua logica API, la tua chiamata potrebbe assomigliare a questa:
+        //
+        // fetch('/api/get-visitor-count')
+        //   .then(response => response.json())
+        //   .then(data => {
+        //       updateVisitorCount(data.visitorCount);
+        //   })
+        //   .catch(error => {
+        //       console.error("Errore nel recuperare il conteggio:", error);
+        //       updateVisitorCount('ERR');
+        //   });
+
+        // Per ora, mostriamo un placeholder iniziale.
+        // Puoi sostituirlo con un valore di default se preferisci.
+
+
+
+        // Avvia l'animazione
+        init();
+        animate();
+
+    </script>
+</body>
+</html>
