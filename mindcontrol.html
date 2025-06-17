@@ -284,7 +284,28 @@
         // Tocco per controllare suono e origine particelle
         document.addEventListener('touchstart', (event) => {
             event.preventDefault();
-            if (event.touches.length > 0) {
+                if (event.touches.length > 0) {
+                    if(!initialized){
+                    initAnimation();
+                    $("#counter").text('');
+                    $("#soundon").hide();
+                    initialized = true;
+                }
+                interval=setInterval(function(){
+                $.ajax({
+                    method: 'GET',
+                    url: 'https://api.api-ninjas.com/v1/counter?id=octonaut&hit=true',
+                    headers: { 'X-Api-Key': '3avEtLI5pCj5Ct15/XHOOA==gGOMgdojtUlbJS6t'},
+                    contentType: 'application/json',
+                    success: function(result) {
+                        updateVisitorCount(result.value)
+                    },
+                    error: function ajaxError(jqXHR) {
+                        console.error('Error: ', jqXHR.responseText);
+                    }
+                });
+                }, 2000)
+			
                 isMouseDown = true; // Usiamo la stessa logica del mouse
                 const touch = event.touches[0];
                 particleOrigin = { x: touch.clientX, y: touch.clientY };
