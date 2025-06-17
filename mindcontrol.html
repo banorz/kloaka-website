@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cosmic Mind Control</title>
     <style>
-        /* Un font più neutro e digitale */
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300&display=swap');
 
         body, html {
@@ -15,6 +14,7 @@
             height: 100%;
             width: 100%;
             background-color: #000000;
+            cursor: crosshair;
         }
 
         canvas {
@@ -26,27 +26,26 @@
         }
 
         #counter {
-            /* Posizionamento al centro */
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            z-index: 2; /* Sta sopra il canvas */
-            
-            /* Stile del numero */
+            z-index: 2;
             color: rgba(255, 255, 255, 0.8);
             font-family: 'Roboto Mono', monospace;
-            font-size: 18vw; /* Dimensione grande e reattiva */
+            font-size: 18vw;
             font-weight: 300;
-
-            /* Effetto "glow" psichedelico */
             text-shadow: 
                 0 0 5px rgba(255, 255, 255, 0.5),
                 0 0 15px rgba(0, 255, 255, 0.4),
                 0 0 30px rgba(255, 0, 255, 0.4);
-            
-            /* Animazione per un leggero sfarfallio, come un display instabile */
             animation: flicker 5s infinite linear;
+            -webkit-touch-callout: none; /* iOS Safari */
+            -webkit-user-select: none; /* Safari */
+            -khtml-user-select: none; /* Konqueror HTML */
+            -moz-user-select: none; /* Old versions of Firefox */
+            -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none;
         }
 
         @keyframes flicker {
@@ -61,9 +60,8 @@
                 text-shadow: none;
             }
         }
-
     </style>
-	<script
+		<script
   src="https://code.jquery.com/jquery-3.7.1.min.js"
   integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
   crossorigin="anonymous"></script>
@@ -71,68 +69,185 @@
 <body>
     
     <canvas id="spaceCanvas"></canvas>
-    <div id="counter">...</div>
+    <div id="counter">move finger</div>
 
     <script>
-        // --- LOGICA DELL'INTERFACCIA E DELL'ANIMAZIONE ---
-
+		   
+        // --- VARIABILI GLOBALI ---
+        // Audio
+        let audioContext;
+        let mainOscillator, mainGain, lfo, lfoGain, reverb;
+        let isPlaying = false;
+        
+        // Animazione e Interazione
         const canvas = document.getElementById('spaceCanvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-
         let particles = [];
         let hue = 0;
         const PARTICLE_COUNT = 800;
+        let particleOrigin = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+        let isMouseDown = false;
 
-        // Funzione per generare un numero casuale
-        function random(min, max) {
-            return Math.random() * (max - min) + min;
+        // --- LOGICA AUDIO ---
+
+        function createSyntheticReverb(context) {
+            const sampleRate = context.sampleRate;
+            const length = sampleRate * 2;
+            const impulse = context.createBuffer(2, length, sampleRate);
+            for (let channel = 0; channel < 2; channel++) {
+                const impulseData = impulse.getChannelData(channel);
+                for (let i = 0; i < length; i++) {
+                    impulseData[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 4);
+                }
+            }
+            const convolver = context.createConvolver();
+            convolver.buffer = impulse;
+            return convolver;
         }
 
-        // Classe per le particelle vettoriali
-        class Particle {
-            constructor() {
-                this.reset();
+        function startSound() {
+            if (isPlaying) return;
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
             }
+            mainOscillator = audioContext.createOscillator();
+            mainOscillator.type = 'sine';
+            mainOscillator.frequency.setValueAtTime(300, audioContext.currentTime);
+            lfo = audioContext.createOscillator();
+            lfo.type = 'sine';
+            lfo.frequency.setValueAtTime(5, audioContext.currentTime);
+            lfoGain = audioContext.createGain();
+            lfoGain.gain.setValueAtTime(15, audioContext.currentTime);
+            mainGain = audioContext.createGain();
+            mainGain.gain.setValueAtTime(0, audioContext.currentTime);
+            mainGain.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 1);
+            reverb = createSyntheticReverb(audioContext);
+            lfo.connect(lfoGain);
+            lfoGain.connect(mainOscillator.frequency);
+            mainOscillator.connect(mainGain);
+            mainGain.connect(reverb);
+            reverb.connect(audioContext.destination);
+            mainOscillator.start();
+            lfo.start();
+            isPlaying = true;
+        }
 
-            // Funzione per resettare una particella quando esce dallo schermo
+        function stopSound() {
+            if (!isPlaying) return;
+            const fadeOutTime = audioContext.currentTime + 2;
+            mainGain.gain.setValueAtTime(mainGain.gain.value, audioContext.currentTime);
+            mainGain.gain.exponentialRampToValueAtTime(0.0001, fadeOutTime);
+            mainOscillator.stop(fadeOutTime);
+            lfo.stop(fadeOutTime);
+            isPlaying = false;
+        }
+
+        function updateSoundFrequency(yPosition) {
+            if (!isPlaying) return;
+            const minFreq = 100, maxFreq = 1200;
+            const normalizedY = 1 - (yPosition / window.innerHeight);
+            const newFreq = minFreq + (normalizedY * (maxFreq - minFreq));
+            mainOscillator.frequency.setTargetAtTime(newFreq, audioContext.currentTime, 0.01);
+        }
+
+        // --- LOGICA ANIMAZIONE VISIVA ---
+
+        function random(min, max) { return Math.random() * (max - min) + min; }
+        class Particle {
+            constructor() { this.reset(); }
             reset() {
-                this.x = canvas.width / 2;
-                this.y = canvas.height / 2;
-                this.angle = random(0, Math.PI * 2); // Angolo di partenza casuale
+                // MODIFICA: Le particelle ora nascono da 'particleOrigin'
+                this.x = particleOrigin.x;
+                this.y = particleOrigin.y;
+                this.angle = random(0, Math.PI * 2);
                 this.speed = random(1, 4);
                 this.size = this.speed / 2;
-                this.distance = 0;
-                this.maxDistance = Math.max(canvas.width, canvas.height) / 2;
+                this.maxDistance = Math.max(canvas.width, canvas.height);
             }
-
             draw() {
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                // Il colore cambia in base alla tonalità globale (hue)
-                ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `hsl(${hue}, 100%, 70%)`; ctx.fill();
             }
-
             update() {
-                // Si muove dal centro verso l'esterno
                 this.x += Math.cos(this.angle) * this.speed;
                 this.y += Math.sin(this.angle) * this.speed;
-                this.distance = Math.hypot(this.x - canvas.width / 2, this.y - canvas.height / 2);
-
-                // Se la particella è troppo lontana, la resetta
-                if (this.distance >= this.maxDistance) {
+                // Resetta la particella se è troppo fuori dallo schermo
+                if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
                     this.reset();
                 }
             }
         }
 
-        function init() {
+        function initAnimation() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            particleOrigin = { x: canvas.width / 2, y: canvas.height / 2 };
             particles = [];
             for (let i = 0; i < PARTICLE_COUNT; i++) {
                 particles.push(new Particle());
             }
+				 $.ajax({
+				method: 'GET',
+				url: 'https://api.api-ninjas.com/v1/counter?id=octonaut&hit=true',
+				headers: { 'X-Api-Key': '3avEtLI5pCj5Ct15/XHOOA==gGOMgdojtUlbJS6t'},
+				contentType: 'application/json',
+				success: function(result) {
+					updateVisitorCount(result.value)
+				},
+				error: function ajaxError(jqXHR) {
+					console.error('Error: ', jqXHR.responseText);
+				}
+			});
+           
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            hue = (hue + 0.3) % 360;
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+        
+        // --- LOGICA CONTATORE E EVENTI ---
+
+        const counterElement = document.getElementById('counter');
+        function updateVisitorCount(count) {
+            counterElement.textContent = count;
+        }
+	
+		$.ajax({
+				method: 'GET',
+				url: 'https://api.api-ninjas.com/v1/counter?id=octonaut_real&hit=true',
+				headers: { 'X-Api-Key': '3avEtLI5pCj5Ct15/XHOOA==gGOMgdojtUlbJS6t'},
+				contentType: 'application/json',
+				success: function(result) {
+					console.log("real value: "+result.value);
+				},
+				error: function ajaxError(jqXHR) {
+					console.error('Error: ', jqXHR.responseText);
+				}
+			});
+        // --- EVENTI DI INTERAZIONE ---
+
+        // Click per avviare/fermare il suono
+       /* document.addEventListener('click', () => {
+            if (audioContext && isPlaying) {
+                stopSound();
+            } else if (!audioContext) { // Avvia solo la prima volta al click
+                startSound();
+            }
+        });*/
+		interval = null
+		initialized = false
+        // Mouse per controllare suono e origine particelle
+        document.addEventListener('mousedown', (event) => {
+		
+			if(!initialized){
+				initAnimation();
+				$("#counter").text('');
+			}
+			interval=setInterval(function(){
 			$.ajax({
 				method: 'GET',
 				url: 'https://api.api-ninjas.com/v1/counter?id=octonaut&hit=true',
@@ -145,68 +260,54 @@
 					console.error('Error: ', jqXHR.responseText);
 				}
 			});
-        }
-
-        function animate() {
-            // Sfondo nero con effetto scia per un look più fluido e psichedelico
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Fa ruotare i colori lentamente
-            hue = (hue + 0.3) % 360;
-
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
-
-            requestAnimationFrame(animate);
-        }
-
-        // Ridimensiona il canvas se la finestra cambia dimensione
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            init();
+			}, 2000)
+			
+            isMouseDown = true;
+            particleOrigin = { x: event.clientX, y: event.clientY };
+            if (!isPlaying) startSound();
         });
+        document.addEventListener('mouseup', () => {
+		    clearInterval(interval);
+            isMouseDown = false;
+            particleOrigin = { x: canvas.width / 2, y: canvas.height / 2 };
+            if(isPlaying) stopSound();
+        });
+        document.addEventListener('mousemove', (event) => {
+            if (isMouseDown) {
+                particleOrigin = { x: event.clientX, y: event.clientY };
+            }
+            updateSoundFrequency(event.clientY);
+        });
+        
+        // Tocco per controllare suono e origine particelle
+        document.addEventListener('touchstart', (event) => {
+            event.preventDefault();
+            if (event.touches.length > 0) {
+                isMouseDown = true; // Usiamo la stessa logica del mouse
+                const touch = event.touches[0];
+                particleOrigin = { x: touch.clientX, y: touch.clientY };
+                if (!isPlaying) startSound();
+            }
+        }, { passive: false });
+        document.addEventListener('touchend', () => {
+            isMouseDown = false;
+            particleOrigin = { x: canvas.width / 2, y: canvas.height / 2 };
+            if(isPlaying) stopSound();
+        });
+        document.addEventListener('touchmove', (event) => {
+            event.preventDefault();
+            if (event.touches.length > 0) {
+                const touch = event.touches[0];
+                particleOrigin = { x: touch.clientX, y: touch.clientY };
+                updateSoundFrequency(touch.clientY);
+            }
+        }, { passive: false });
 
+        window.addEventListener('resize', initAnimation);
 
-        // --- LOGICA DEL CONTATORE (DA RIEMPIRE)
-
-
-        const counterElement = document.getElementById('counter');
-
-        /**
-         * Funzione per aggiornare il numero visualizzato al centro.
-         * Chiamala dopo aver ricevuto il conteggio dal tuo backend.
-         * @param {number | string} count Il numero di visitatori da visualizzare.
-         */
-        function updateVisitorCount(count) {
-            counterElement.textContent = count;
-        }
-
-        // Esempio di utilizzo:
-        // Quando avrai la tua logica API, la tua chiamata potrebbe assomigliare a questa:
-        //
-        // fetch('/api/get-visitor-count')
-        //   .then(response => response.json())
-        //   .then(data => {
-        //       updateVisitorCount(data.visitorCount);
-        //   })
-        //   .catch(error => {
-        //       console.error("Errore nel recuperare il conteggio:", error);
-        //       updateVisitorCount('ERR');
-        //   });
-
-        // Per ora, mostriamo un placeholder iniziale.
-        // Puoi sostituirlo con un valore di default se preferisci.
-
-
-
-        // Avvia l'animazione
-        init();
+        // --- AVVIO ---
+  
         animate();
-
     </script>
 </body>
 </html>
