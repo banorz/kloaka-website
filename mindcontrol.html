@@ -313,6 +313,7 @@
             }
         }, { passive: false });
         document.addEventListener('touchend', () => {
+            clearInterval(interval);
             isMouseDown = false;
             particleOrigin = { x: canvas.width / 2, y: canvas.height / 2 };
             if(isPlaying) stopSound();
