@@ -67,7 +67,7 @@
   crossorigin="anonymous"></script>
 </head>
 <body>
-    
+    <img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExenEzZjY1bTM5czNycTM4aHhxdXd5aTFvbTQ1c2M3Ym9hOGZ6dm5teCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/tVHqp1rty3dgf9jmJt/giphy.gif" style="position:absolute; top:16px; right:16px; width:120px;"/>
     <canvas id="spaceCanvas"></canvas>
     <div id="counter">move finger</div>
 
@@ -244,10 +244,9 @@
         document.addEventListener('mousedown', (event) => {
 		
 			if(!initialized){
-				initialized = true;
 				initAnimation();
 				$("#counter").text('');
-				
+				initialized = true;
 			}
 			interval=setInterval(function(){
 			$.ajax({
