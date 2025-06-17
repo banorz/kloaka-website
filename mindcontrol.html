@@ -244,8 +244,10 @@
         document.addEventListener('mousedown', (event) => {
 		
 			if(!initialized){
+				initialized = true;
 				initAnimation();
 				$("#counter").text('');
+				
 			}
 			interval=setInterval(function(){
 			$.ajax({
